@@ -1,7 +1,6 @@
 #lang racket
 
-(define (ast? v)
-	(or (symbol? v) (list? v) (hash? v)))
+(require "types.rkt")
 
 (provide pr-str)
 (define/contract (pr-str expr)

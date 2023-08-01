@@ -1,18 +1,28 @@
 #lang racket
 
-;  [\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)
-; (define (read-str str)
-; 	(display str))
-;
-
 (require racket/generic)
+(require "types.rkt")
+
+(define pat
+	(pregexp (string-append
+		   "[\\s,]*"                   ; ws and comma not captured
+		   "("                         ; begin capturing group
+		   "~@"                        ; either special two-char ~@
+		   "|[\\[\\]{}\\(\\)'`~^@]"    ; or special char []{}()'`~^@
+		   "|\"(?:\\.|[^\\\"])*\"?"    ; or maybe-unclosed string
+		   "|;.*"                      ; or comment
+		   "|[^\\s\\[\\]{}('\"`,;)]*"  ; or word
+		   ")"                         ; close capturing group
+		   )))
 
 (define/contract (tokenize str)
-  (-> string? list)
-  (list))
+	(-> string? list?)
+	(define tokens (regexp-match* pat str #:match-select cadr))
+	(filter (lambda (x) (not (equal? x ""))) tokens))
 
-(define (ast? v)
-  (or (symbol? v) (list? v) (hash? v)))
+(tokenize "~@  bool")
+(tokenize "~@  ]")
+(tokenize ",,(  + 2   (*  3  4)  )")
 
 (define-generics self
 	[read-str self input]
@@ -21,25 +31,27 @@
 	[peek self]
 	[next self])
 
-(struct token (variant data) #:transparent)
+(struct token (token-variant data) #:transparent)
 
-(define (variant? v)
-	(set-member? (set "splice-unquote"
-			  "special"
-			  "double-quoted-string"
-			  "comment"
-			  "word") v))
+(define (token-variant? v)
+	(set-member? (set 'splice-unquote
+			  'special
+			  'double-quoted-string
+			  'comment
+			  'word) v))
 
-(define/contract (make-token variant data)
-  (-> variant? string? token?)
-  (token variant data))
+(define/contract (make-token token-variant data)
+  (-> token-variant? string? token?)
+  (token token-variant data))
 
 (struct reader-state (tokens [pos #:mutable])
 	#:transparent
 	#:methods gen:self [
 		(define/contract (read-str self input)
 			(-> struct? string? ast?)
-			(list))
+			; (list 12 22))
+			(hash-set (hash) "hh" "12"))
+			; (hash))
 		; (define (read-list)
 		;   (read-form)
 		; read anything but parens?
@@ -60,5 +72,4 @@
 						(add1 (reader-state-pos self)))
 			(peek self))])
 
-; (provide reader-state read-str)
 (provide reader-state read-str read-form make-token)
