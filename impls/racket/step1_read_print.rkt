@@ -1,14 +1,8 @@
 #lang racket
 
-; PICKUP "env.rkt" https://github.com/kanaka/mal/blob/master/process/guide.md#step-3-environments
 (require "reader.rkt")
 (require "printer.rkt")
-
-(define repl-env (make-hash))
-(hash-set! repl-env "+" (lambda (a b) (+ a b)))
-(hash-set! repl-env "-" (lambda (a b) (- a b)))
-(hash-set! repl-env "*" (lambda (a b) (* a b)))
-(hash-set! repl-env "/" (lambda (a b) (floor (/ a b))))
+(require "env.rkt")
 
 (define (ast? v)
 	(or (symbol? v) (list? v) (hash? v)))
@@ -33,7 +27,7 @@
     [_ ast]))
 
 (define/contract (EVAL ast env)
-	(-> ast? hash? ast?)
+	(-> ast? env? ast?)
 	(match ast
 		; [(? (not (list? ast))) (eval-ast ast env)]
 		; [(? empty-ast? ast) ast]
