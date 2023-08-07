@@ -58,12 +58,12 @@
 (define (read-list rs)
 	(define (h rs acc)
 		(next rs)
-		(define (f v)
-			(append (list (read-atom v))
+		(define (f)
+			(append (list (read-form rs))
 				(h rs acc)))
 		(match (peek rs)
 			[")"	acc]
-			[v	(f v)]))
+			[_	(f)]))
 	(h rs '()))
 
 (struct reader-state (tokens [pos #:mutable])
@@ -94,3 +94,7 @@
 (check-equal?
 	(read-list (reader-state '("(" "+" "16" "12" ")") 0))
 	'(+ 16 12))
+
+(check-equal?
+	(read-list (reader-state '("(" "+" "(" "+" "16" "12" ")" "11" ")") 0))
+	'(+ (+ 16 12) 11))

@@ -17,28 +17,39 @@
 	(-> string? ast?)
 	(read-str str))
 
+(define (trim ls) (drop-right (cdr ls) 1))
+
 (define (eval-ast ast env)
 	; (-> ast? hash? ast?)
+	; contract?: list includes open and close parens
+	(define (eval-list ast)
+		(map	(lambda (a) (EVAL a env))
+			(match (first ast)
+				['\(	(trim ast)]
+				[_	ast])))
+
 	(match ast
 		[(? symbol? ast)	(env-get env ast)]
-		[(? list? ast)		(map (lambda (a) (EVAL a env)) ast)]
+		[(? list? ast)		(eval-list ast)]
 		[_ ast]))
 
 (define (do-apply f-args env)
-	(define k (car f-args))
-	(define f (env-get env k))
-	(apply f (cdr f-args)))
-(check-equal? 10 (do-apply '(- 12 2) repl-env))
-(check-equal? 11 (do-apply (read-str "(- 12 1)") repl-env))
+	(define f (env-get env (car f-args)))
+	(define args (cdr f-args))
+	(apply f (eval-ast args env)))
 
 (define/contract (EVAL ast env)
 	(-> ast? env? ast?)
+	(define (f) (eval-ast ast env))
 	(match ast
-		[(not (? list? _)) (eval-ast ast env)]
-		[(? empty-ast? ast) ast]
+		[(not (? list? _))	(f)]
+		[(? empty-ast? ast)	ast]
 		[_ (match (first ast)
 		     ; def! let*
 		     [_ (do-apply ast env)])]))
+
+(check-equal? 10 (do-apply '(- 12 2) repl-env))
+(check-equal? 11 (do-apply (read-str "(- 12 1)") repl-env))
 
 (define/contract (PRINT expr)
 	(-> ast? string?)
@@ -54,3 +65,8 @@
 		(loop)))
 
 (loop)
+; (define (test)
+; 	(displayln (rep "(* 2 pi)"))
+; 	(displayln (rep "(+ (- 11 2) 5)"))
+; 	)
+; (test)

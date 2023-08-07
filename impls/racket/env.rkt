@@ -7,11 +7,13 @@
 	[env-find self k]
 	[env-get self k])
 
+(define (env-value? n) (or (procedure? n) (number? n)))
+
 (struct env ([data #:mutable])
 	#:transparent
 	#:methods gen:self [
 		(define/contract (env-set self k v)
-			(-> struct? symbol? procedure? void?)
+			(-> struct? symbol? env-value? void?)
 			(set-env-data! self (hash-set (env-data self) k v)))
 
 		(define/contract (env-find self k)
@@ -22,7 +24,8 @@
 			self)
 
 		(define/contract (env-get self k)
-			(-> struct? symbol? procedure?)
+			; (-> struct? symbol? procedure?)
+			(-> struct? symbol? env-value?)
 			(define env-containing-k (env-find self k))
 			(hash-ref (env-data env-containing-k) k))])
 
@@ -31,6 +34,7 @@
   (env (hash)))
 
 (define repl-env (make-env (env 12)))
+(env-set repl-env 'pi 3)
 (env-set repl-env '+ (lambda (a b) (+ a b)))
 (env-set repl-env '- (lambda (a b) (- a b)))
 (env-set repl-env '* (lambda (a b) (* a b)))
