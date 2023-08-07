@@ -1,5 +1,7 @@
 #lang racket
 
+(require rackunit)
+
 (require "reader.rkt")
 (require "printer.rkt")
 (require "env.rkt")
@@ -13,29 +15,30 @@
 
 (define/contract (READ str)
 	(-> string? ast?)
-	(define rs (reader-state (list (make-token 'splice-unquote "~@")
-				       (make-token 'special "]")) 0))
-	; (define rs (reader-state (list (make-token "splice-unquote" "~@")
-	; 			       (make-token "special" "]")) 0))
-	(read-str rs str))
+	(read-str str))
 
-(define/contract (eval-ast ast env)
-	(-> ast? hash? ast?)
+(define (eval-ast ast env)
+	; (-> ast? hash? ast?)
 	(match ast
-		; mal-symbol?
-		[(? list? ast)  (map (lambda (a) (EVAL a env)) ast)]
+		[(? symbol? ast)	(env-get env ast)]
+		[(? list? ast)		(map (lambda (a) (EVAL a env)) ast)]
 		[_ ast]))
+
+(define (do-apply f-args env)
+	(define k (car f-args))
+	(define f (env-get env k))
+	(apply f (cdr f-args)))
+(check-equal? 10 (do-apply '(- 12 2) repl-env))
+(check-equal? 11 (do-apply (read-str "(- 12 1)") repl-env))
 
 (define/contract (EVAL ast env)
 	(-> ast? env? ast?)
 	(match ast
-		[(not (? list? ast)) (list #\a)]
-		; [(not (? list? ast)) (eval-ast ast env)]
+		[(not (? list? _)) (eval-ast ast env)]
 		[(? empty-ast? ast) ast]
 		[_ (match (first ast)
-		     [_ (list #\z)]
-		     )]
-		))
+		     ; def! let*
+		     [_ (do-apply ast env)])]))
 
 (define/contract (PRINT expr)
 	(-> ast? string?)
@@ -50,4 +53,4 @@
 		(displayln (rep input))
 		(loop)))
 
-; (loop)
+(loop)

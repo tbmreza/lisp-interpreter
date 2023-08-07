@@ -1,7 +1,9 @@
 #lang racket
 
-; symbol is an object that contains a string name value
-(define (ast? v)
-	(or (symbol? v) (list? v) (hash? v)))
+(define (scalar? v)
+	(or (number? v) (symbol? v)))
 
-(provide ast?)
+(define (ast? v)
+	(or (scalar? v) (list? v) (hash? v)))
+
+(provide scalar? ast?)
