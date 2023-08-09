@@ -38,21 +38,28 @@
 	(define args (cdr f-args))
 	(apply f (eval-ast args env)))
 
-(define/contract (EVAL ast env)
-	(-> ast? env? ast?)
-	(define (f) (eval-ast ast env))
+; (define/contract (EVAL ast env)
+(define (EVAL ast env)
+	; (-> ast? env? ast?)
+	(define (def!-special)
+		(define k (second ast))
+		(env-set! env k (EVAL (third ast) env))
+		(env-get env k))
+
 	(match ast
-		[(not (? list? _))	(f)]
+		[(not (? list? _))	(eval-ast ast env)]
 		[(? empty-ast? ast)	ast]
 		[_ (match (first ast)
-		     ; def! let*
-		     [_ (do-apply ast env)])]))
+		     ['def!	(def!-special)]
+		     ; let*
+		     [_		(do-apply ast env)])]))
 
 (check-equal? 10 (do-apply '(- 12 2) repl-env))
 (check-equal? 11 (do-apply (read-str "(- 12 1)") repl-env))
 
-(define/contract (PRINT expr)
-	(-> ast? string?)
+; (define/contract (PRINT expr)
+(define (PRINT expr)
+	; (-> ast? string?)
 	(pr-str expr))
 
 (define (rep input) (PRINT (EVAL (READ input) repl-env)))
@@ -64,9 +71,10 @@
 		(displayln (rep input))
 		(loop)))
 
-(loop)
-; (define (test)
-; 	(displayln (rep "(* 2 pi)"))
-; 	(displayln (rep "(+ (- 11 2) 5)"))
-; 	)
-; (test)
+; (loop)
+(define (test)
+	(displayln (rep "(* 2 pi)"))
+	(displayln (rep "(+ (- 11 2) 5)"))
+	(displayln (rep "(def! b (+ pi 2))"))
+	)
+(test)
