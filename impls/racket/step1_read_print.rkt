@@ -38,20 +38,41 @@
 	(define args (cdr f-args))
 	(apply f (eval-ast args env)))
 
+; helper
+(define (split-to-pairs lst)
+	(cond	[(empty? lst) empty]
+		[(empty? (cdr lst)) (list lst)]
+		[else (cons (list (car lst) (cadr lst)) (split-to-pairs (cddr lst)))]))
+
 ; (define/contract (EVAL ast env)
 (define (EVAL ast env)
 	; (-> ast? env? ast?)
 	(define (def!-special)
-		(define k (second ast))
-		(env-set! env k (EVAL (third ast) env))
-		(env-get env k))
+		; 'def! is	(first ast)
+		(define k	(second ast))
+		(define v (EVAL (third ast) env))
+		(env-set! env k v) v)
+
+	; Example mal source:
+	;
+	; (let* ( key (first kvs)
+	; 	  rst (rest kvs)
+	; 	  val (first rst)
+	; 	  acc (_foldr_pairs f init (rest rst)))
+	; 	(f key val acc))
+	;
+	(define (let*-special)
+		(define (f p env) (env-set! env (first p) (EVAL (second p) env)))
+
+		; (third ast) is the body of this form, whose env is folded (second ast).
+		(EVAL (third ast) (foldl f env (split-to-pairs (second ast)))))
 
 	(match ast
 		[(not (? list? _))	(eval-ast ast env)]
 		[(? empty-ast? ast)	ast]
 		[_ (match (first ast)
 		     ['def!	(def!-special)]
-		     ; let*
+		     ['let*	(let*-special)]
 		     [_		(do-apply ast env)])]))
 
 (check-equal? 10 (do-apply '(- 12 2) repl-env))
@@ -75,6 +96,8 @@
 (define (test)
 	(displayln (rep "(* 2 pi)"))
 	(displayln (rep "(+ (- 11 2) 5)"))
-	(displayln (rep "(def! b (+ pi 2))"))
+	(displayln (rep "(def! c (+ (- 11 2) 5))"))
+	(displayln (rep "(let* (c 2 d (+ 1 2)) (+ c d))"))
+	(displayln (rep "(let* (c 2 d c) (+ c d))"))
 	)
 (test)
