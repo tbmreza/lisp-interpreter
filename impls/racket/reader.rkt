@@ -25,26 +25,28 @@
 (check-equal? 9 (length (tokenize ",,(  + 2   (*  3  4)  )")))
 
 (define-generics self
-	; [at-end self]
 	[read-form self]
-	; [read-form self acc]
 	[peek self]
 	[next self])
 
-(struct token (token-variant data) #:transparent)
+; (struct token (token-variant data) #:transparent)
 
-(define (token-variant? v)
-	(set-member? (set 'splice-unquote
-			  'special
-			  'double-quoted-string
-			  'comment
-			  'word) v))
+; (define (token-variant? v)
+; 	(set-member? (set 'splice-unquote
+; 			  'special
+; 			  'double-quoted-string
+; 			  'comment
+; 			  'word) v))
 
 (define/contract (read-atom v)
 	(-> string? scalar?)
-	(match (string->number v)
-		[#f	(string->symbol v)]
-		[parsed	parsed]))
+	(match v
+		["true"   #t]
+		["false"  #f]
+
+		[_ (match (string->number v)
+			[#f      (string->symbol v)]
+			[parsed  parsed])]))
 
 (define/contract (read-str input)
 	(-> string? ast?)
