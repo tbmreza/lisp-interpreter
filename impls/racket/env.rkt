@@ -1,5 +1,6 @@
 #lang racket
 
+(require "core.rkt")
 (require rackunit)
 (require racket/generic)
 
@@ -22,9 +23,8 @@
 			(-> struct? symbol? env-value? struct?)
 			(env-add! self k v) self)
 
-		; (define/contract (env-find self k)
-		(define (env-find self k)
-			; (-> struct? symbol? struct?)
+		(define/contract (env-find self k)
+			(-> struct? symbol? struct?)
 			(define has-k (hash-ref (env-data self) k  #f))
 			(if has-k
 				self
@@ -32,25 +32,22 @@
 					[#f  (void)]
 					[o   (env-find o k)])))
 
-		; (define/contract (env-get self k)
-		(define (env-get self k)
-			; (-> struct? symbol? env-value?)
+		(define/contract (env-get self k)
+			(-> struct? symbol? env-value?)
 			(define env-containing-k (env-find self k))
 			(hash-ref (env-data env-containing-k) k))])
 
 (define (maybe-hash? v) (or (hash? v) (not v)))
+; symbols?
 (define/contract (make-env outer binds exprs)
 	(-> maybe-hash? list? list? struct?)
-	(define data (hash))
 	; else: data[binds[i]] = exprs[i]
-	(env data outer))
+	(define (f p data) (hash-set data (car p) (cdr p)))
+	(env (foldl f (hash) (map cons binds exprs))
+	     outer))
 
-; (define repl-env (make-env #f (second ast) (list)))
 (define repl-env (make-env #f (list) (list)))
-(env-add! repl-env 'pi 3)
-(env-add! repl-env '+ (lambda (a b) (+ a b)))
-(env-add! repl-env '- (lambda (a b) (- a b)))
-(env-add! repl-env '* (lambda (a b) (* a b)))
+(for ([(k v) ns]) (env-add! repl-env k v))
 (env-add! repl-env '/ (lambda (a b) (floor (/ a b))))
 (env-add! repl-env 'id (lambda (a) a))
 

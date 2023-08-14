@@ -21,22 +21,20 @@
 
 (define (eval-ast ast env)
 	; (-> ast? hash? ast?)
-	; contract?: list includes open and close parens
 	(define (eval-list ast)
-		(map	(lambda (a) (EVAL a env))
+		(map	(lambda (a) (EVAL a #:env env))
 			(match (first ast)
 				['\(	(trim ast)]
 				[_	ast])))
 
-	; (define (b) (displayln "b..") 12)
 	(match ast
-		; [(? boolean? ast)  (b)]
 		[(? symbol? ast)  (env-get env ast)]
 		[(? list? ast)    (eval-list ast)]
+		; PICKUP not eval-list since when
+		; [(? list? ast)    (EVAL ast #:env env)]
 		[_ ast]))
 
 (define (apply-head-on-rest f-args env)
-; (define (do-apply f-args env)
 	(define f (env-get env (car f-args)))
 	(define args (cdr f-args))
 	(apply f (eval-ast args env)))
@@ -48,13 +46,13 @@
 		[else              (cons (list (car l) (cadr l))
 		                         (split-to-pairs (cddr l)))]))
 
-; (define/contract (EVAL ast env)
-(define (EVAL ast env)
+(define (EVAL ast #:env env)
 	; (-> ast? env? ast?)
 	(define (def!-special)
 		; 'def! is      (first ast)
 		(define k       (second ast))
-		(define v (EVAL (third ast) env))
+		; (define v (EVAL (third ast) env))
+		(define v (EVAL (third ast) #:env env))
 		(env-set! env k v) v)
 
 	; Example mal source:
@@ -66,10 +64,10 @@
 	; 	(f key val acc))
 	;
 	(define (let*-special)
-		(define (f p env) (env-set! env (first p) (EVAL (second p) env)))
+		(define (f p env) (env-set! env (first p) (EVAL (second p) #:env env)))
 
 		; (third ast) is the body of this form, whose env is folded (second ast).
-		(EVAL (third ast) (foldl f env (split-to-pairs (second ast)))))
+		(EVAL (third ast) #:env (foldl f env (split-to-pairs (second ast)))))
 
 	; Example mal source:
 	;
@@ -90,11 +88,13 @@
 		(let ([pred  (second ast)]
 		      [then  (third ast)]
 		      [els   (fourth ast)])
-		(match (EVAL pred env)
-			[#t  (EVAL then env)]
-			[#f  (EVAL els env)])))
+		(match (EVAL pred #:env env)
+			[#t  (EVAL then #:env env)]
+			[#f  (EVAL els #:env env)])))
 
 	(define (fn*-special)
+		; (define fn-env (make-env env (second ast) <closure-params>))
+		; (EVAL (third ast) fn-env)
 		(env-get env 'id))
 
 	(match ast
@@ -117,7 +117,18 @@
 	; (-> ast? string?)
 	(pr-str expr))
 
-(define (rep input) (PRINT (EVAL (READ input) repl-env)))
+(define (rep input)
+	(define (repl-eval read-ast) (EVAL read-ast #:env repl-env))
+	((compose1 PRINT repl-eval READ) input))
+
+; The life of `repl-env:`
+; - core.rkt defines map of procedures for env.rkt,
+; - env.rkt exports `repl-env`,
+; - core.mal then mutates it,
+; - finally main EVAL uses it.
+;
+; core.mal
+; (rep "(def! not (fn* (a) (if a false true)))")
 
 (define (loop)
 	(display "user> ")
@@ -128,13 +139,13 @@
 
 ; (loop)
 (define (test)
-	(displayln (rep "(* 2 pi)"))
-	(displayln (rep "(+ (- 11 2) 5)"))
-	(displayln (rep "(def! c (+ (- 11 2) 5))"))
-	(displayln (rep "(let* (c 2 d (+ 1 2)) (+ c d))"))
-	(displayln (rep "(let* (c 2 d c) (+ c d))"))
-	(displayln (rep "(fn* (a) a)"))
-	(displayln (rep "(if true (+ 0 1) (+ 0 2))"))
-	(displayln (rep "(if false (+ 0 1) (+ 0 2))"))
+	(check-equal? (rep "(* 2 pi)") (number->string 6))
+	(check-equal? (rep "(+ (- 11 2) 5)") (number->string 14))
+	(check-equal? (rep "(def! c (+ (- 11 2) 5))") (number->string 14))
+	(check-equal? (rep "(let* (c 2 d (+ 1 2)) (+ c d))") (number->string 5))
+	(rep "(fn* (a) a)")
+	(check-equal? (rep "(if false (+ 0 1) (+ 0 2))") (number->string 2))
+	(check-equal? (rep "(if (= 11 11) (+ 0 1) (+ 0 2))") (number->string 1))
+	; (rep "((fn* (a) a) 22)")
 	)
 (test)
