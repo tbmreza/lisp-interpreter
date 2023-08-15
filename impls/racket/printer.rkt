@@ -4,6 +4,7 @@
 
 (provide pr-str)
 ; (define/contract (pr-str expr)
+; (define (pr-str expr #:print-readably)
 (define (pr-str expr)
 	; (-> ast? string?)
 	(match expr

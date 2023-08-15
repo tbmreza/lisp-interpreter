@@ -7,10 +7,9 @@
 (define-generics self
 	[env-set! self k v]
 	[env-find self k caller]
-	; [env-get self k])
 	[env-get self k caller])
 
-(define (env-value? n) (or (procedure? n) (number? n)))
+(define (env-value? n) (or (string? n) (procedure? n) (number? n)))
 
 (define (env-add! e k v)
 	(set-env-data! e (hash-set (env-data e) k v)))
@@ -25,9 +24,8 @@
 			(-> struct? symbol? env-value? struct?)
 			(env-add! self k v) self)
 
-		; (define/contract (env-find self k)
-		(define (env-find self k caller)
-			; (-> struct? symbol? struct?)
+		(define/contract (env-find self k caller)
+			(-> struct? symbol? string? struct?)
 			(define has-k (hash-ref (env-data self) k  #f))
 			(if has-k
 				self
@@ -35,9 +33,8 @@
 					[#f  (void)]
 					[o   (env-find o k caller)])))
 
-		; (define/contract (env-get self k)
-			; (-> struct? symbol? env-value?)
-		(define (env-get self k caller)
+		(define/contract (env-get self k caller)
+			(-> struct? symbol? string? env-value?)
 			(define env-containing-k (env-find self k caller))
 			(hash-ref (env-data env-containing-k) k))])
 

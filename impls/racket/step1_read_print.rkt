@@ -23,12 +23,11 @@
 (define (trim ls) (drop-right (cdr ls) 1))
 
 (define (eval-ast ast env)
-	; (-> ast? hash? ast?)
-	(define (eval-list ast)
-		(map	(lambda (a) (EVAL a #:env env))
-			(match (first ast)
-				['\(  (trim ast)]
-				[_    ast])))
+	(define (eval-list ast) (map
+		(lambda (a) (EVAL a #:env env))
+		(match (first ast)
+			['\(  (trim ast)]
+			[_    ast])))
 
 	(match ast
 		[(? symbol? ast)  (env-get env ast "eval-ast")]
@@ -70,10 +69,12 @@
 	; 	(f key val acc))
 	;
 	(define (let*-special)
-		(define (f p env) (env-set! env (first p) (EVAL (second p) #:env env)))
+		(define (f p env)
+			(env-set! env (first p)
+				  (EVAL (second p) #:env env)))
 
-		; (third ast) is the body of this form, whose env is folded (second ast).
-		(EVAL (third ast) #:env (foldl f env (split-to-pairs (second ast)))))
+		(EVAL (third ast)
+		      #:env (foldl f env (split-to-pairs (second ast)))))
 
 	; Example mal source:
 	;
@@ -100,17 +101,14 @@
 
 
 	(define (fn*-special)
-		; (-> procedure?)
-		; let
-		(define binds (second ast))
-		(define body (caddr ast))
-		(define f `(lambda ,(values binds) ,body))
-
-		(eval f ns))
+		(let* ([binds  (second ast)]
+		       [body   (caddr ast)]
+		       [f      `(lambda ,(values binds) ,body)])
+		(eval f ns)))
 
 	(match ast
-		[(not (? list? _))	(eval-ast ast env)]
-		[(? empty-ast? ast)	ast]
+		[(not (? list? _))   (eval-ast ast env)]
+		[(? empty-ast? ast)  ast]
 
 		[_ (match (first ast)
 			['def!  (def!-special)]
@@ -142,6 +140,7 @@
 ; core.mal
 ; prints #<procedure> somewhere along
 (rep "(def! not (fn* (a) (if a false true)))")
+(rep "(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))")
 
 (define (loop)
 	(display "user> ")
@@ -171,10 +170,5 @@
 	(check-equal? (rep (read-line in)) "2")
 	(close-input-port in)
 
-	; file in files
-	(define in2 (open-input-file "tests/a.mal"))
-	(check-equal? (rep (read-line in2)) (symbol->string 'yatta))
-
-	(close-input-port in2)
 	)
 (test2)

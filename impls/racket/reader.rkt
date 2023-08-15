@@ -36,6 +36,7 @@
 (define/contract (read-atom v)
 	(-> string? scalar?)
 	(match v
+		["nil"    (void)]
 		["true"   #t]
 		["false"  #f]
 
