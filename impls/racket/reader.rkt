@@ -29,14 +29,9 @@
 	[peek self]
 	[next self])
 
-; (struct token (token-variant data) #:transparent)
-
-; (define (token-variant? v)
-; 	(set-member? (set 'splice-unquote
-; 			  'special
-; 			  'double-quoted-string
-; 			  'comment
-; 			  'word) v))
+(define (first-is-doublequote? v) (equal? (string-ref v 0) #\"))
+(define (string-content v)
+	(substring v 1 (sub1 (string-length v))))
 
 (define/contract (read-atom v)
 	(-> string? scalar?)
@@ -44,9 +39,11 @@
 		["true"   #t]
 		["false"  #f]
 
+		[(? first-is-doublequote? v)  (string-content v)]
 		[_ (match (string->number v)
 			[#f      (string->symbol v)]
 			[parsed  parsed])]))
+
 
 (define/contract (read-str input)
 	(-> string? ast?)
@@ -64,8 +61,8 @@
 			(append (list (read-form rs))
 				(h rs acc)))
 		(match (peek rs)
-			[")"	acc]
-			[_	(f)]))
+			[")"  acc]
+			[_    (f)]))
 	(h rs '()))
 
 (struct reader-state (tokens [pos #:mutable])
@@ -75,21 +72,20 @@
 			(-> struct? ast?)
 			(define current-token (peek self))
 			(match (string-ref current-token 0)
-				[#\( (read-list self)]
-				[_   (read-atom (peek self))])
+				[#\(  (read-list self)]
+				[_    (read-atom (peek self))])
 			)
 
 		(define (peek self)
-			(list-ref	(reader-state-tokens self)
-					(reader-state-pos self)))
+			(list-ref (reader-state-tokens self)
+				  (reader-state-pos self)))
 
 		(define (next self)
-			(set-reader-state-pos!	self
-						(add1 (reader-state-pos self)))
+			(set-reader-state-pos! self
+					       (add1 (reader-state-pos self)))
 			(peek self))])
 
 (check-equal? (read-str ",,(+ 15 16)") '(+ 15 16))
-; (map (lambda (x) (displayln (symbol? x))) (read-str ",,(+ 15 ,16 isOk)"))
 
 (provide reader-state read-str tokenize)
 

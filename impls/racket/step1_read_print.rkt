@@ -126,6 +126,7 @@
 ; (define/contract (PRINT expr)
 (define (PRINT expr)
 	; (-> ast? string?)
+	; (pr-str expr #:print-readably))
 	(pr-str expr))
 
 (define (rep input)
@@ -139,7 +140,8 @@
 ; - finally main EVAL uses it.
 ;
 ; core.mal
-; (rep "(def! not (fn* (a) (if a false true)))")
+; prints #<procedure> somewhere along
+(rep "(def! not (fn* (a) (if a false true)))")
 
 (define (loop)
 	(display "user> ")
@@ -155,6 +157,7 @@
 	(check-equal? (rep "(def! c (+ (- 11 2) 5))") (number->string 14))
 	(check-equal? (rep "(let* (c 2 d (+ 1 2)) (+ c d))") (number->string 5))
 	(check-equal? (rep "(if false (+ 0 1) (+ 0 2))") (number->string 2))
+	(check-equal? (rep "(if (not true) (+ 0 1) (+ 0 2))") (number->string 2))
 	(check-equal? (rep "(if (= 11 11) (+ 0 1) (+ 0 2))") (number->string 1))
 	(check-equal? (rep "((fn* (a) a) 22)") (number->string 22))
 	(check-equal? (rep "((fn* (a) (* a 2)) 22)") (number->string 44))
@@ -162,3 +165,16 @@
 	(check-equal? (rep "((fn* (x y z) (+ x y z)) 100 10 1)") (number->string 111))
 	)
 (test)
+
+(define (test2)
+	(define in (open-input-file "tests/one_plus_one.mal"))
+	(check-equal? (rep (read-line in)) "2")
+	(close-input-port in)
+
+	; file in files
+	(define in2 (open-input-file "tests/a.mal"))
+	(check-equal? (rep (read-line in2)) (symbol->string 'yatta))
+
+	(close-input-port in2)
+	)
+(test2)
