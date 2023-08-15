@@ -45,10 +45,27 @@
 
 (define/contract (make-env #:outer outer #:binds binds #:exprs exprs)
 	(-> #:outer maybe-struct?  #:binds symbols?  #:exprs list?  struct?)
-	; else: data[binds[i]] = exprs[i]
-	(define (f p data) (hash-set data (car p) (cdr p)))
-	(env (foldl f (hash) (map cons binds exprs))
-	     outer))
+	(define data
+		(for/hash ([i  (in-naturals)]
+			   [b  binds]
+			   [e  exprs])
+		#:final (eq? b '&)
+		(match b
+			; clojure-style packed arguments
+			['&  (values (list-ref binds (add1 i))
+				     (list-tail exprs i))]
+			[_   (values b e)])))
+
+	(env data outer))
+
+	; (define (associate p data)
+	; 	(define b (car p))
+	; 	(match b
+	; 		; the b after this is bind to rest of exprs (as one list)
+	; 		['&  (hash-set data b (cdr p))]
+	; 		[_   (hash-set data b (cdr p))]))
+	; (env (foldl associate (hash) (map cons binds exprs))
+	;      outer))
 
 (check-equal? (make-env #:outer #f #:binds (list) #:exprs (list))
 	      (env (hash) #f))
@@ -56,6 +73,10 @@
 	      (env (hash 'a 21) #f))
 (check-equal? (make-env #:outer #f #:binds (list 'a 'b) #:exprs (list 21 23))
 	      (env (hash 'a 21 'b 23) #f))
+(check-equal? (make-env #:outer #f #:binds (list '& 'args) #:exprs (list 11 22 33))
+	      (env (hash 'args '(11 22 33)) #f))
+(check-equal? (make-env #:outer #f #:binds (list 'age '& 'args) #:exprs (list 20 11 22 33))
+	      (env (hash 'age 20 'args '(11 22 33)) #f))
 
 
 (define repl-env (make-env #:outer #f #:binds (list) #:exprs (list)))
