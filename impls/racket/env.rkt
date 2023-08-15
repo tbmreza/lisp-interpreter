@@ -6,15 +6,17 @@
 
 (define-generics self
 	[env-set! self k v]
-	[env-find self k]
-	[env-get self k])
+	[env-find self k caller]
+	; [env-get self k])
+	[env-get self k caller])
 
 (define (env-value? n) (or (procedure? n) (number? n)))
 
 (define (env-add! e k v)
 	(set-env-data! e (hash-set (env-data e) k v)))
 
-(define (maybe-struct? v) (or (struct? v) (void? v)))
+; (define (maybe-struct? v) (or (struct? v) (void? v)))
+(define (maybe-struct? v) (or (struct? v) (not v)))
 
 (struct env ([data #:mutable] outer)
 	#:transparent
@@ -23,35 +25,48 @@
 			(-> struct? symbol? env-value? struct?)
 			(env-add! self k v) self)
 
-		(define/contract (env-find self k)
-			(-> struct? symbol? struct?)
+		; (define/contract (env-find self k)
+		(define (env-find self k caller)
+			; (-> struct? symbol? struct?)
 			(define has-k (hash-ref (env-data self) k  #f))
 			(if has-k
 				self
 				(match (env-outer self)
 					[#f  (void)]
-					[o   (env-find o k)])))
+					[o   (env-find o k caller)])))
 
-		(define/contract (env-get self k)
-			(-> struct? symbol? env-value?)
-			(define env-containing-k (env-find self k))
+		; (define/contract (env-get self k)
+			; (-> struct? symbol? env-value?)
+		(define (env-get self k caller)
+			(define env-containing-k (env-find self k caller))
 			(hash-ref (env-data env-containing-k) k))])
 
 (define (maybe-hash? v) (or (hash? v) (not v)))
-; symbols?
-(define/contract (make-env outer binds exprs)
-	(-> maybe-hash? list? list? struct?)
+(define (symbols? v) (andmap symbol? v))
+
+; exprs? list of terminals
+
+(define/contract (make-env #:outer outer #:binds binds #:exprs exprs)
+	(-> #:outer maybe-struct?  #:binds symbols?  #:exprs list?  struct?)
 	; else: data[binds[i]] = exprs[i]
 	(define (f p data) (hash-set data (car p) (cdr p)))
 	(env (foldl f (hash) (map cons binds exprs))
 	     outer))
 
-(define repl-env (make-env #f (list) (list)))
+(check-equal? (make-env #:outer #f #:binds (list) #:exprs (list))
+	      (env (hash) #f))
+(check-equal? (make-env #:outer #f #:binds (list 'a) #:exprs (list 21))
+	      (env (hash 'a 21) #f))
+(check-equal? (make-env #:outer #f #:binds (list 'a 'b) #:exprs (list 21 23))
+	      (env (hash 'a 21 'b 23) #f))
+
+
+(define repl-env (make-env #:outer #f #:binds (list) #:exprs (list)))
 (for ([(k v) ns]) (env-add! repl-env k v))
 (env-add! repl-env '/ (lambda (a b) (floor (/ a b))))
 (env-add! repl-env 'id (lambda (a) a))
 
-(check-true (env? (env-find repl-env '/)))
-(check-equal? ((env-get repl-env '+) 2 4) 6)
+(check-true (env? (env-find repl-env '/ "")))
+(check-equal? ((env-get repl-env '+ "") 2 4) 6)
 
 (provide repl-env (struct-out env) env-get env-set! make-env)

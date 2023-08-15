@@ -7,6 +7,9 @@
 (require "env.rkt")
 (require "types.rkt")
 
+(define-namespace-anchor a)
+(define ns (namespace-anchor->namespace a))
+
 (define (empty-ast? ast)
 	(match ast
 		[(? list? ast) (empty? ast)]
@@ -24,34 +27,37 @@
 	(define (eval-list ast)
 		(map	(lambda (a) (EVAL a #:env env))
 			(match (first ast)
-				['\(	(trim ast)]
-				[_	ast])))
+				['\(  (trim ast)]
+				[_    ast])))
 
 	(match ast
-		[(? symbol? ast)  (env-get env ast)]
+		[(? symbol? ast)  (env-get env ast "eval-ast")]
 		[(? list? ast)    (eval-list ast)]
-		; PICKUP not eval-list since when
-		; [(? list? ast)    (EVAL ast #:env env)]
 		[_ ast]))
 
-(define (apply-head-on-rest f-args env)
-	(define f (env-get env (car f-args)))
-	(define args (cdr f-args))
-	(apply f (eval-ast args env)))
+(define (apply-head-on-rest ast env)
+	(define h (car ast))
+	(define args (cdr ast))
+
+	(if (symbol? h) (apply (env-get env h "apply-head-on-rest") (eval-ast args env))
+	                (apply (EVAL h #:env (make-env #:outer env
+						       ; PICKUP magic binds and exprs, tests passing means these aren't used
+						       #:binds (list 'a 'b)
+						       #:exprs (list 21 23)))
+			       args)))
 
 ; helper
 (define (split-to-pairs l)
-	(cond	[(empty? l)        empty]
-		[(empty? (cdr l))  (list l)]
-		[else              (cons (list (car l) (cadr l))
-		                         (split-to-pairs (cddr l)))]))
+	(cond [(empty? l)        empty]
+	      [(empty? (cdr l))  (list l)]
+	      [else              (cons (list (car l) (cadr l))
+				       (split-to-pairs (cddr l)))]))
 
 (define (EVAL ast #:env env)
 	; (-> ast? env? ast?)
 	(define (def!-special)
 		; 'def! is      (first ast)
 		(define k       (second ast))
-		; (define v (EVAL (third ast) env))
 		(define v (EVAL (third ast) #:env env))
 		(env-set! env k v) v)
 
@@ -92,10 +98,15 @@
 			[#t  (EVAL then #:env env)]
 			[#f  (EVAL els #:env env)])))
 
+
 	(define (fn*-special)
-		; (define fn-env (make-env env (second ast) <closure-params>))
-		; (EVAL (third ast) fn-env)
-		(env-get env 'id))
+		; (-> procedure?)
+		; let
+		(define binds (second ast))
+		(define body (caddr ast))
+		(define f `(lambda ,(values binds) ,body))
+
+		(eval f ns))
 
 	(match ast
 		[(not (? list? _))	(eval-ast ast env)]
@@ -143,9 +154,11 @@
 	(check-equal? (rep "(+ (- 11 2) 5)") (number->string 14))
 	(check-equal? (rep "(def! c (+ (- 11 2) 5))") (number->string 14))
 	(check-equal? (rep "(let* (c 2 d (+ 1 2)) (+ c d))") (number->string 5))
-	(rep "(fn* (a) a)")
 	(check-equal? (rep "(if false (+ 0 1) (+ 0 2))") (number->string 2))
 	(check-equal? (rep "(if (= 11 11) (+ 0 1) (+ 0 2))") (number->string 1))
-	; (rep "((fn* (a) a) 22)")
+	(check-equal? (rep "((fn* (a) a) 22)") (number->string 22))
+	(check-equal? (rep "((fn* (a) (* a 2)) 22)") (number->string 44))
+	(check-equal? (rep "((fn* (aa bb) (+ aa bb)) 0 9)") (number->string 9))
+	(check-equal? (rep "((fn* (x y z) (+ x y z)) 100 10 1)") (number->string 111))
 	)
 (test)

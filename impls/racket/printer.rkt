@@ -9,6 +9,7 @@
 	(match expr
 		[(? number? expr)  (number->string expr)]
 		[(? list? expr)    (foldl (lambda (e str) (string-append str (pr-str e))) "" expr)]
+		[(? symbol? expr)  (symbol->string expr)]
 		[expr expr]))
 
 ; (pr-str (list #\2 #\4))
