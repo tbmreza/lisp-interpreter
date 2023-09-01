@@ -58,15 +58,6 @@
 
 	(env data outer))
 
-	; (define (associate p data)
-	; 	(define b (car p))
-	; 	(match b
-	; 		; the b after this is bind to rest of exprs (as one list)
-	; 		['&  (hash-set data b (cdr p))]
-	; 		[_   (hash-set data b (cdr p))]))
-	; (env (foldl associate (hash) (map cons binds exprs))
-	;      outer))
-
 (check-equal? (make-env #:outer #f #:binds (list) #:exprs (list))
 	      (env (hash) #f))
 (check-equal? (make-env #:outer #f #:binds (list 'a) #:exprs (list 21))
