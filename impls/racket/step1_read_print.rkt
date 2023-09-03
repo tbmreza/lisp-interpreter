@@ -26,8 +26,6 @@
 ; (define mf (mal-func 11 22 33 44))
 ; (displayln (mal-func-fn mf))
 
-
-; PICKUP head of what this returns is malfunc
 (define (eval-ast ast env)
 	; if input hardcode, what is the f.fn (the final evaluation result)?
 	(define (eval-list ast) (map
@@ -40,35 +38,6 @@
 		[(? symbol? ast)  (env-get env ast "eval-ast")]
 		[(? list? ast)    (eval-list ast)]
 		[_ ast]))
-
-(define (apply-head-on-rest ast env)
-	(define hd (car ast))
-	(define rs (cdr ast))
-
-	(define tco-evala (eval-ast ast env))
-
-	; (define f (car tco-evala))
-	(define f '(11 22 33 44))
-
-	(define (handle-malfunc)
-	  (define mf (apply mal-func (values f)))
-	  ; PICKUP
-	  ; (h env (mal-func-fn mf))
-	  (display ""))
-
-	(cond [(equal? (length f) (procedure-arity mal-func)) (handle-malfunc)]
-	      [#f  (displayln "apply...")])
-
-	(define args (cdr tco-evala))
-
-	(define (parse fn)
-		(define fn-env (make-env #:outer env #:binds (list) #:exprs (list)))
-		(apply (EVAL fn #:env fn-env) rs))
-
-	(define evala (eval-ast rs env))
-	(match hd
-		[(? symbol? hd)  (apply (env-get env hd "apply-head-on-rest") evala)]
-		[fn             (parse fn)]))
 
 ; helper
 (define (split-to-pairs l)
@@ -164,6 +133,36 @@
 		       [body   (caddr ast)]
 		       [f      `(lambda ,(values binds) ,body)])
 		(eval f ns)))
+
+	(define (apply-head-on-rest ast env)
+		(define hd (car ast))
+		(define rs (cdr ast))
+
+		(define tco-evala (eval-ast ast env))
+
+		; (define f (car tco-evala))
+		(define f '(11 22 33 44))
+
+		(define (handle-malfunc)
+			(define mf (apply mal-func (values f)))
+			; (define mf (mal-func (third ast) (second ast) env original-function-value))
+			; PICKUP test case
+			(h env (mal-func-fn mf)))
+
+		(cond [(equal? (length f) (procedure-arity mal-func)) (handle-malfunc)]
+		      [#f  (displayln "apply...")])
+
+		(define args (cdr tco-evala))
+
+		(define (parse fn)
+			(define fn-env (make-env #:outer env #:binds (list) #:exprs (list)))
+			(apply (EVAL fn #:env fn-env) rs))
+
+		(define evala (eval-ast rs env))
+		(match hd
+			[(? symbol? hd)  (apply (env-get env hd "apply-head-on-rest") evala)]
+			[fn             (parse fn)]))
+
 	(define (h env ast)
 		(match ast
 			[(not (? list? _))   (eval-ast ast env)]
