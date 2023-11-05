@@ -1,0 +1,2 @@
+command = "racket repl.rkt {args} < {filename}"
+output.out = "-"
