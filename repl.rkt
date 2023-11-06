@@ -40,6 +40,12 @@
                       [body      (third ast)])
                  (eval/p env+ body))]
 
+              ['if
+               (cond [(eval/p env (second ast))  (eval/p env (third ast))]
+                     [else                       (eval/p env (fourth ast))])]
+
+              ['do  (last (interpret env (cdr ast)))]
+
               ['fn*
                (let* ([binding-vars  (second ast)]
                       [body          (third ast)]
