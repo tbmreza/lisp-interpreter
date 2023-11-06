@@ -1,9 +1,21 @@
 # DRAFT
 
+issues:
 - turnt.toml unclosed string python panics
 
 setup.sh:
 pipx install turnt  # 1.11.0
+
+??:
+turnt simulate typing enter (test multiline string input to repl)
+racket readline
+
+This lisp interpreter has 2 interfaces:
+    - A repl to type programs in.
+        We manage testing in this way using [turnt]. Usage is `turnt mal_process/*/*.t`.
+
+    - An implementation of racket's #lang protocol.
+        Usage is `racket program.mal`.
 
 interpreter testing infra (instin)
     you see interpreter project, you remember this infra
