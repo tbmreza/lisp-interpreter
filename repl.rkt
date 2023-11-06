@@ -1,9 +1,5 @@
 #lang racket
 
-#| A lisp interpreter that aims to be a working (superset of) mal whose implementation isn't
-   necessarily inspiring for translation from racket to non-language-oriented programming
-   languages. ?? to main.rkt |#
-
 (require "reader.rkt")
 (require "env.rkt")
 
