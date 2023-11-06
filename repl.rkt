@@ -2,7 +2,7 @@
 
 #| A lisp interpreter that aims to be a working (superset of) mal whose implementation isn't
    necessarily inspiring for translation from racket to non-language-oriented programming
-   languages. |#
+   languages. ?? to main.rkt |#
 
 (require "reader.rkt")
 (require "env.rkt")
@@ -27,15 +27,18 @@
     (cond [(not (list? ast))  (interpret env ast)]
           [(empty? ast)       ast]
           [else
-            (let* ([nodes  (interpret env ast)]
-                   [proc   (car nodes)]
-                   [args   (cdr nodes)])
-              (apply proc args))]))
+            (match (car ast)
+              ['def!
+               (let ([k  (first (cdr ast))]
+                     [v  (second (cdr ast))])
+                 (env-set! env k v)
+                 v)]
 
-(define repl-env
-  (Env (hash '+ +
-             '- -
-             '* *)))
+              [_
+                (let* ([nodes  (interpret env ast)]
+                       [proc   (car nodes)]
+                       [args   (cdr nodes)])
+                  (apply proc args))])]))
 
 (define EVAL
   ((curry eval) repl-env))
