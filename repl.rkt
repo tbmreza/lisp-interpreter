@@ -30,9 +30,14 @@
             (match (car ast)
               ['def!
                (let ([k  (first (cdr ast))]
-                     [v  (second (cdr ast))])
-                 (env-set! env k v)
-                 v)]
+                     [v  (eval env (second (cdr ast)))])
+                 (env-set! env k v) v)]
+
+              ['let*
+               (let* ([binds  (second ast)]
+                      [env+   (make-env #:outer env #:binds binds)]
+                      [body   (third ast)])
+                 (eval env+ body))]
 
               [_
                 (let* ([nodes  (interpret env ast)]
