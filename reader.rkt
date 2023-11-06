@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ; ?? #lang mal  deferrable until this fails to lex a valid mal program
 (define (read-mal-syntax input)
@@ -9,4 +9,6 @@
              default-read-syntax
              open-input-string) input))
 
-(provide read-mal-syntax)
+(define (racket-eval-with ns data) (eval data ns))
+
+(provide (all-defined-out))

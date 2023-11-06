@@ -3,6 +3,9 @@
 (require "reader.rkt")
 (require "env.rkt")
 
+(define-namespace-anchor a)
+(define ns (namespace-anchor->namespace a))
+
 (define (READ input)
   (read-mal-syntax input))
 
@@ -24,6 +27,8 @@
           [(empty? ast)       ast]
           [else
             (match (car ast)
+              ['list  (interpret env (cdr ast))]
+
               ['def!
                (let ([k  (first (cdr ast))]
                      [v  (eval env (second (cdr ast)))])
@@ -34,6 +39,22 @@
                       [env+   (make-env #:outer env #:binds binds)]
                       [body   (third ast)])
                  (eval env+ body))]
+
+              ; ( (fn* (a b) (+ a b)) 2 3)
+  ; (define (fn*-special ast)
+  ;   (let* ([binds  (second ast)]
+  ;          [body   (caddr ast)]
+  ;          [f      `(lambda ,(values binds) ,body)])
+  ;   (eval f ns)))
+
+  ; PICKUP skip to tco fn*
+              ; ['fn*
+              ;  (let* ([binds  (second ast)]
+              ;         [env+   (make-env #:outer env #:binds binds)]
+              ;         [clo    (make-env #:outer env #:binds binds)]
+              ;         ; (eval env+ body))]
+              ;         [body   (third ast)])
+              ;    (eval env+ binds)
 
               [_
                 (let* ([nodes  (interpret env ast)]
