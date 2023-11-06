@@ -9,6 +9,4 @@
              default-read-syntax
              open-input-string) input))
 
-(define (racket-eval-with ns data) (eval data ns))
-
 (provide (all-defined-out))

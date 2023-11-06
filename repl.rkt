@@ -13,16 +13,16 @@
 
 (define (interpret env ast)
   (match ast
-    [(? variable-name? var)
-     (env-get env var)]
+    [(? variable-name? var)  (env-get env var)]
+    [`(lambda ,_ ,_)         ast]
 
     [(? list? nodes)
-     (map (lambda (node) (eval env node))
+     (map (lambda (node) (eval/p env node))
           nodes)]
 
     [value value]))
 
-(define (eval env ast)
+(define (eval/p env ast)
     (cond [(not (list? ast))  (interpret env ast)]
           [(empty? ast)       ast]
           [else
@@ -31,39 +31,36 @@
 
               ['def!
                (let ([k  (first (cdr ast))]
-                     [v  (eval env (second (cdr ast)))])
+                     [v  (eval/p env (second (cdr ast)))])
                  (env-set! env k v) v)]
 
               ['let*
-               (let* ([binds  (second ast)]
-                      [env+   (make-env #:outer env #:binds binds)]
-                      [body   (third ast)])
-                 (eval env+ body))]
+               (let* ([bindings  (second ast)]
+                      [env+      (let*-env env bindings)]
+                      [body      (third ast)])
+                 (eval/p env+ body))]
 
-              ; ( (fn* (a b) (+ a b)) 2 3)
-  ; (define (fn*-special ast)
-  ;   (let* ([binds  (second ast)]
-  ;          [body   (caddr ast)]
-  ;          [f      `(lambda ,(values binds) ,body)])
-  ;   (eval f ns)))
-
-  ; PICKUP skip to tco fn*
-              ; ['fn*
-              ;  (let* ([binds  (second ast)]
-              ;         [env+   (make-env #:outer env #:binds binds)]
-              ;         [clo    (make-env #:outer env #:binds binds)]
-              ;         ; (eval env+ body))]
-              ;         [body   (third ast)])
-              ;    (eval env+ binds)
+              ['fn*
+               (let* ([binding-vars  (second ast)]
+                      [body          (third ast)]
+                      [f             `(lambda ,(values binding-vars) ,body)])
+                 ; Defer nesting env because binding-exprs is only available on fn* application.
+                 (eval/p env f))]
 
               [_
-                (let* ([nodes  (interpret env ast)]
-                       [proc   (car nodes)]
-                       [args   (cdr nodes)])
-                  (apply proc args))])]))
+                (match ast
+                  [`(lambda ,_ ,_)  (eval ast ns)]
+                  [_
+                    (let* ([nodes  (interpret env ast)]
+                           [proc   (car nodes)]
+                           [args   (cdr nodes)])
+                      (match proc
+                        [`(lambda ,binding-vars ,body)
+                          (eval/p (env-nest env binding-vars args) body)]
+                        [_  (apply proc args)]))])])]))
 
 (define EVAL
-  ((curry eval) repl-env))
+  ((curry eval/p) repl-env))
 
 (define (PRINT ast)
   (println ast))  ; ?? readably is displayln, otherwise println
