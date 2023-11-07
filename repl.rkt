@@ -1,13 +1,13 @@
 #lang racket
 
 (require "reader.rkt")
+(require "printer.rkt")
 (require "env.rkt")
 
 (define-namespace-anchor a)
 (define ns (namespace-anchor->namespace a))
 
-(define (READ input)
-  (read-mal-syntax input))
+(define READ read-mal-syntax)
 
 (define variable-name? symbol?)
 
@@ -30,6 +30,10 @@
 
     [value value]))
 
+(define (filter-when pred? lst)
+  (for/list ([i (length lst)] #:when (pred? i))
+    (list-ref lst i)))
+
 (define (eval/p env ast)
     (cond [(not (list? ast))  (interpret env ast)]
           [(empty? ast)       ast]
@@ -43,9 +47,11 @@
                  (env-set! env k v) v)]
 
               ['let*
-               (let* ([bindings  (second ast)]
-                      [env+      (let*-env env bindings)]
-                      [body      (third ast)])
+               (let* ([bindings       (second ast)]
+                      [binding-vars   (filter-when even? bindings)]
+                      [binding-exprs  (filter-when odd? bindings)]
+                      [env+           (env-nest env binding-vars binding-exprs)]
+                      [body           (third ast)])
                  (eval/p env+ body))]
 
               ['if
@@ -76,25 +82,31 @@
 (define EVAL
   ((curry eval/p) repl-env))
 
-(define (PRINT ast)
-  ; ?? readably is displayln, otherwise println
-  (println ast)) 
-  ; (displayln ast))
+(define PRINT pr-str)
 
 (define rep (compose1 PRINT EVAL READ))
 
-(define (silence go) (begin go (void)))  ; ?? inline in exec
+(define (silence go) (begin go (void)))
 (define exec (compose1 silence EVAL READ))
+
+; core.rkt {
+(silence (env-set! repl-env 'eval (lambda (ast) (EVAL repl-env ast))))
+; }
 
 ; core.mal {  ?? rep defs and repl is separate modules. repl.rkt reads core.mal line by line before it starts looping
 (exec "(def! not (fn* (a) (if a #f #t)))")
-; }
 
 ; Use racket's here string to sidestep escaping " and \ literals.
 (exec #<<unnamed
 (def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))
 unnamed
 )
+; }
+
+; (define (func)
+;   (define en (Env-data repl-env))
+;   (hash-ref en 'empty?))
+; ((func) (list))
 
 (define (loop)
   (display "user> ")

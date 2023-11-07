@@ -1,6 +1,7 @@
 #lang racket
 
 (require racket/generic)
+(require "reader.rkt")
 
 (define-generics envself
   [env-get   envself k]
@@ -46,36 +47,24 @@
         [else              (cons (list (car l) (cadr l))
                                  (split-to-pairs (cddr l)))]))
 
-(define (let*-env outer alternating)
-  ; (define splitted (split-to-pairs alternating))  ; ??
-  ; (env-nest outer (evens alternating) (odds alternating))
-  (define data
-    (let ([h (make-hash)])
-      (define (mut-h kv) (hash-set! h (first kv) (second kv)))
-      (map mut-h (split-to-pairs alternating)) h))
-  (Env data outer))
-
 (define/contract (read-file filepath) (-> string? string?)
   (read-line (open-input-file filepath)))
-  ; (define close-me (open-input-file filepath))  ; ??
-  ; (define s (read-line close-me))
-  ; (close-input-port close-me) s)
 
 (define repl-env
-  (let ([core-module  (make-hash)])  ; ?? instantiate mutable hash without sets
-    (define (add k proc) (hash-set! core-module k proc))
+  (let ([core-module  (make-hash)])
+    (define (procedure k proc) (hash-set! core-module k proc))
 
-    (add '+ +) (add '- -) (add '* *)
-    (add 'str
-         (lambda (es) (string-join es "")))
+    (procedure '< <) (procedure '<= <=) (procedure '> >) (procedure '>= >=)
+    (procedure '+ +) (procedure '- -) (procedure '* *) (procedure '/ /)
 
-    (add 'slurp read-file)
+    (procedure 'str  (lambda (es) (string-join es "")))
+
+    (procedure 'read-string  read-mal-syntax)
+    (procedure 'slurp        read-file)
+
+    (procedure 'empty?  empty?)
+    (procedure 'count   length)
 
     (Env core-module false)))
-
-; (define (func)
-;   (define en (Env-data repl-env))
-;   (hash-ref en 'str))
-; ((func) (list "a" "\n" "b"))
 
 (provide (all-defined-out))
