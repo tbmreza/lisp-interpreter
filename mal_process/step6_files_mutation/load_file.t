@@ -1,0 +1,1 @@
+(load-file "./input.mal")

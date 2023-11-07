@@ -13,6 +13,10 @@
 
 (define (interpret env ast)
   (match ast
+    [keyword
+      #:when (member keyword `(true false))
+      (eval keyword ns)]
+
     [(? variable-name? var)  (env-get env var)]
     [`(lambda ,_ ,_)         ast]
 
@@ -71,11 +75,20 @@
 (define (PRINT ast)
   (println ast))  ; ?? readably is displayln, otherwise println
 
+(define rep (compose1 PRINT EVAL READ))
+
+(define (silence go) (begin go (void)))
+(define exec (compose1 silence EVAL READ))
+
+; core.mal {  ?? rep defs and repl is separate modules. repl.rkt reads core.mal line by line before it starts looping
+(exec "(def! not (fn* (a) (if a #f #t)))")
+; }
+
 (define (loop)
   (display "user> ")
   (define input (read-line))
   (unless (eof-object? input)  ; input eof with <c-d>
-    ((compose1 PRINT EVAL READ) input)
+    (rep input)
     (loop)))
 
 (loop)

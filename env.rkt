@@ -55,9 +55,19 @@
       (map mut-h (split-to-pairs alternating)) h))
   (Env data outer))
 
+(define/contract (read-file filepath) (-> string? string?)
+  (read-line (open-input-file filepath)))
+  ; (define close-me (open-input-file filepath))  ; ??
+  ; (define s (read-line close-me))
+  ; (close-input-port close-me) s)
+
 (define repl-env
-  (let ([h (make-hash)])  ; ?? use make-env
-    (hash-set! h '+ +) (hash-set! h '- -) (hash-set! h '* *)
-    (Env h false)))
+  (let ([core-module  (make-hash)])  ; ?? instantiate mutable hash without sets
+    (define (add k proc) (hash-set! core-module k proc))
+
+    (add '+ +) (add '- -) (add '* *)
+    (add 'slurp read-file)
+
+    (Env core-module false)))
 
 (provide (all-defined-out))
