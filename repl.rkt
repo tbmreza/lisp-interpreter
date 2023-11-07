@@ -17,6 +17,10 @@
       #:when (member keyword `(true false))
       (eval keyword ns)]
 
+    [keyword
+      #:when (member keyword `(nil))
+      (eval '(void) ns)]
+
     [(? variable-name? var)  (env-get env var)]
     [`(lambda ,_ ,_)         ast]
 
@@ -73,16 +77,24 @@
   ((curry eval/p) repl-env))
 
 (define (PRINT ast)
-  (println ast))  ; ?? readably is displayln, otherwise println
+  ; ?? readably is displayln, otherwise println
+  (println ast)) 
+  ; (displayln ast))
 
 (define rep (compose1 PRINT EVAL READ))
 
-(define (silence go) (begin go (void)))
+(define (silence go) (begin go (void)))  ; ?? inline in exec
 (define exec (compose1 silence EVAL READ))
 
 ; core.mal {  ?? rep defs and repl is separate modules. repl.rkt reads core.mal line by line before it starts looping
 (exec "(def! not (fn* (a) (if a #f #t)))")
 ; }
+
+; Use racket's here string to sidestep escaping " and \ literals.
+(exec #<<unnamed
+(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))
+unnamed
+)
 
 (define (loop)
   (display "user> ")
@@ -92,3 +104,14 @@
     (loop)))
 
 (loop)
+
+; (require readline/readline)
+;
+; (define (repl-loop)  ; ?? history ok, but panics on user break. replacing <cr> with \n is separate issue
+;   (let ([line (readline "user> ")])
+;     (add-history line)
+;     ; (printf "~a~n" (rep line)))
+;     (rep line))
+;   (repl-loop))
+;
+; (repl-loop)

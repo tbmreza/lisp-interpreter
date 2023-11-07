@@ -66,8 +66,16 @@
     (define (add k proc) (hash-set! core-module k proc))
 
     (add '+ +) (add '- -) (add '* *)
+    (add 'str
+         (lambda (es) (string-join es "")))
+
     (add 'slurp read-file)
 
     (Env core-module false)))
+
+; (define (func)
+;   (define en (Env-data repl-env))
+;   (hash-ref en 'str))
+; ((func) (list "a" "\n" "b"))
 
 (provide (all-defined-out))
