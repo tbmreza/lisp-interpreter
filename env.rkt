@@ -41,12 +41,6 @@
            [_   (values v e)])))
      (Env data envself))])
 
-(define (split-to-pairs l)
-  (cond [(empty? l)        empty]
-        [(empty? (cdr l))  (list l)]
-        [else              (cons (list (car l) (cadr l))
-                                 (split-to-pairs (cddr l)))]))
-
 (define/contract (read-file filepath) (-> string? string?)
   (read-line (open-input-file filepath)))
 

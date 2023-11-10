@@ -108,22 +108,12 @@ unnamed
 ;   (hash-ref en 'empty?))
 ; ((func) (list))
 
-(define (loop)
-  (display "user> ")
-  (define input (read-line))
-  (unless (eof-object? input)  ; input eof with <c-d>
-    (rep input)
-    (loop)))
+(require readline/readline)
 
-(loop)
+(define (repl-loop)  ; ?? panics on user break. turnt sets return_code = 1. <c-z> is fine though
+  (let ([line (readline "user> ")])
+    (add-history line)
+    (rep line))
+  (repl-loop))
 
-; (require readline/readline)
-;
-; (define (repl-loop)  ; ?? history ok, but panics on user break. replacing <cr> with \n is separate issue
-;   (let ([line (readline "user> ")])
-;     (add-history line)
-;     ; (printf "~a~n" (rep line)))
-;     (rep line))
-;   (repl-loop))
-;
-; (repl-loop)
+(repl-loop)
