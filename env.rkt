@@ -51,7 +51,7 @@
     (procedure '< <) (procedure '<= <=) (procedure '> >) (procedure '>= >=)
     (procedure '+ +) (procedure '- -) (procedure '* *) (procedure '/ /)
 
-    (procedure 'str  (lambda (es) (string-join es "")))
+    (procedure 'str  (lambda es (string-join es "")))  ;; racket syntax for variadic es
 
     (procedure 'read-string  read-mal-syntax)
     (procedure 'slurp        read-file)
@@ -59,6 +59,22 @@
     (procedure 'empty?  empty?)
     (procedure 'count   length)
 
-    (Env core-module false)))
+    (Env core-module #false)))
+
+(module+ test (require rackunit)
+  (define (fn k) (env-get repl-env k))
+
+  (check-equal?
+    ((fn 'str) "hel" "lo")
+    "hello")
+
+  (define doesn′t-panic
+    ((fn 'read-string) "(+ 1 3)"))
+
+  (check-equal?
+    ((fn 'slurp) "input.mal")
+    "12")
+  )
+
 
 (provide (all-defined-out))

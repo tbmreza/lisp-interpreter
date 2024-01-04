@@ -103,11 +103,6 @@ unnamed
 )
 ; }
 
-; (define (func)
-;   (define en (Env-data repl-env))
-;   (hash-ref en 'empty?))
-; ((func) (list))
-
 (require readline/readline)
 
 (define (repl-loop)  ; ?? panics on user break. turnt sets return_code = 1. <c-z> is fine though
@@ -116,4 +111,12 @@ unnamed
     (rep line))
   (repl-loop))
 
-(repl-loop)
+(module+ main (repl-loop))
+
+(module+ test
+  ;; ?? str undefined when exec load-file def
+  (define prog #<<unnamed
+(load-file "./input.mal")
+unnamed
+)
+  (rep prog))
