@@ -23,7 +23,7 @@
      (define maybe-v (hash-ref (Env-data envself) k #f))
      (cond [(not maybe-v)
              (match (Env-outer envself)
-               [#f     false]
+               [#f     #false]
                [outer  (env-find outer k)])]
            [else
              maybe-v]))
@@ -44,6 +44,13 @@
 (define/contract (read-file filepath) (-> string? string?)
   (read-line (open-input-file filepath)))
 
+;; swap! :: box? procedure? rest-args v
+(define (swap! b p . rest-args)
+  (define v
+    (cond [(empty? rest-args)  (curry p (unbox b))]
+          [else                (apply (curry p (unbox b)) rest-args)]))
+  (set-box! b v) v)
+
 (define repl-env
   (let ([core-module  (make-hash)])
     (define (procedure k proc) (hash-set! core-module k proc))
@@ -58,6 +65,12 @@
 
     (procedure 'empty?  empty?)
     (procedure 'count   length)
+
+    (procedure 'atom    box)
+    (procedure 'atom?   box?)
+    (procedure 'deref   unbox)
+    (procedure 'reset!  set-box!)
+    (procedure 'swap!   swap!)
 
     (Env core-module #false)))
 
@@ -74,6 +87,19 @@
   (check-equal?
     ((fn 'slurp) "input.mal")
     "12")
+
+  (check-equal?
+    ((fn 'read-string) ((fn 'str) "aa" "bb"))
+    'aabb)
+
+  (check-equal?
+    ((fn 'swap!) (box 12) (lambda (x) (+ x 1)))
+    13)
+
+  (check-equal?
+    ((fn 'swap!) (box 12) (lambda (x y) (+ x y)) 4)
+    16)
+
   )
 
 
