@@ -83,6 +83,8 @@
 
   (define doesn′t-panic
     ((fn 'read-string) "(+ 1 3)"))
+  ;; (define does-panic
+  ;;   ((fn 'unimplemented) "(+ 1 3)"))
 
   (check-equal?
     ((fn 'slurp) "input.mal")
