@@ -61,7 +61,7 @@
     (procedure 'str  (lambda es (string-join es "")))  ;; racket syntax for variadic es
 
     (procedure 'read-string  read-mal-syntax)
-    (procedure 'slurp        read-file)
+    (procedure 'slurp        read-file)  ;  slurp :: filepath -> string
 
     (procedure 'empty?  empty?)
     (procedure 'count   length)
@@ -81,10 +81,10 @@
     ((fn 'str) "hel" "lo")
     "hello")
 
-  (define doesn′t-panic
+  (define _doesn′t-panic
     ((fn 'read-string) "(+ 1 3)"))
-  ;; (define does-panic
-  ;;   ((fn 'unimplemented) "(+ 1 3)"))
+; (define does-panic
+;   ((fn 'unimplemented) "(+ 1 3)"))
 
   (check-equal?
     ((fn 'slurp) "input.mal")
@@ -93,6 +93,11 @@
   (check-equal?
     ((fn 'read-string) ((fn 'str) "aa" "bb"))
     'aabb)
+
+  ;; slurp |> str |> read-string
+  (check-equal?
+    ((fn 'read-string) ((fn 'str) "(do " ((fn 'slurp) "input.mal") "\nnil)"))
+    '(do 12 nil))
 
   (check-equal?
     ((fn 'swap!) (box 12) (lambda (x) (+ x 1)))

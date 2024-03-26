@@ -21,5 +21,5 @@ interpreter testing infra (instin)
         debug print to visualize small steps
         utilize testcases for extra value (docs, pbt/fuzz/higher level techniques)
         per host language idioms for fs, logging instrumentation
-        ?? can you formalize interpreters, whatever that means?
-        ?? for compiled world there's ffi. how can interpreters be not monolingual.
+    can you formalize interpreters, whatever that means?
+    for compiled world there's ffi. how can interpreters be not monolingual.

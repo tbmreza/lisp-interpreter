@@ -1,6 +1,6 @@
 # lisp-interpreter
 
-A lisp interpreter that aims to be a working <!-- (superset of) --> [mal].
+A lisp interpreter that aims to be a working [mal].
 <!-- whose implementation isn't necessarily inspiring for translation from racket to non-language-oriented programming languages. -->
 Full compliance to upstream mal spec is a non-goal, but we argue for some degree of it with our test
 suite.
@@ -24,7 +24,7 @@ and of course the merged racket implementation of mal for more trusted examples.
 The implementation has 2 interfaces:
 - A repl to type programs in.
     - `racket repl.rkt` starts the repl.
-    - We manage testing in this way using [turnt]. `turnt mal_process/*/*.t` runs all the tests.
+    - We manage testing in this way using [turnt]. `~/.local/bin/turnt mal_process/*/*.t` runs all the tests.
 - (TODO) An implementation of racket's #lang protocol.
     - Usage is `racket program.mal`.
 

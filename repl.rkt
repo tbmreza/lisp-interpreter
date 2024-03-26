@@ -34,6 +34,7 @@
   (for/list ([i (length lst)] #:when (pred? i))
     (list-ref lst i)))
 
+;; ?? unit eval/p do ...
 (define (eval/p env ast)
     (cond [(not (list? ast))  (interpret env ast)]
           [(empty? ast)       ast]
@@ -93,6 +94,8 @@
 (silence (env-set! repl-env 'eval (lambda (ast) (EVAL repl-env ast))))
 ; }
 
+;; (define exec-lines)
+;; (exec-lines "core.mal")
 ; core.mal {  ?? rep defs and repl is separate modules. repl.rkt reads core.mal line by line before it starts looping
 (exec "(def! not (fn* (a) (if a #f #t)))")
 
@@ -114,9 +117,13 @@ unnamed
 (module+ main (repl-loop))
 
 (module+ test
-  ;; ?? str undefined when exec load-file def
+;;   (define prog #<<unnamed
+;; (load-file "./input.mal")
+;; unnamed
+;; )
   (define prog #<<unnamed
-(load-file "./input.mal")
+(not true)
 unnamed
 )
   (rep prog))
+  ;; (displayln 12))
