@@ -34,52 +34,52 @@
   (for/list ([i (length lst)] #:when (pred? i))
     (list-ref lst i)))
 
-;; ?? unit eval/p do ...
 (define (eval/p env ast)
-    (cond [(not (list? ast))  (interpret env ast)]
-          [(empty? ast)       ast]
-          [else
-            (match (car ast)
-              ['list  (interpret env (cdr ast))]
+  (cond [(not (list? ast))  (interpret env ast)]
+        [(empty? ast)       ast]
+        [else
+          (match (car ast)
+            ['list  (interpret env (cdr ast))]
 
-              ['def!
-               (let ([k  (first (cdr ast))]
-                     [v  (eval/p env (second (cdr ast)))])
-                 (env-set! env k v) v)]
+            ['def!
+             (let ([k  (first (cdr ast))]
+                   [v  (eval/p env (second (cdr ast)))])
+               (env-set! env k v) v)]
 
-              ['let*
-               (let* ([bindings       (second ast)]
-                      [binding-vars   (filter-when even? bindings)]
-                      [binding-exprs  (filter-when odd? bindings)]
-                      [env+           (env-nest env binding-vars binding-exprs)]
-                      [body           (third ast)])
-                 (eval/p env+ body))]
+            ['let*
+             (let* ([bindings       (second ast)]
+                    [binding-vars   (filter-when even? bindings)]
+                    [binding-exprs  (filter-when odd? bindings)]
+                    [env+           (env-nest env binding-vars binding-exprs)]
+                    [body           (third ast)])
+               (eval/p env+ body))]
 
-              ['if
-               (cond [(eval/p env (second ast))  (eval/p env (third ast))]
-                     [else                       (eval/p env (fourth ast))])]
+            ['if
+             (cond [(eval/p env (second ast))  (eval/p env (third ast))]
+                   [else                       (eval/p env (fourth ast))])]
 
-              ['do  (last (interpret env (cdr ast)))]
+            ['do  (last (interpret env (cdr ast)))]
 
-              ['fn*
-               (let* ([binding-vars  (second ast)]
-                      [body          (third ast)]
-                      [f             `(lambda ,(values binding-vars) ,body)])
-                 ; Defer nesting env because binding-exprs is only available on fn* application.
-                 (eval/p env f))]
+            ['fn*
+             (let* ([binding-vars  (second ast)]
+                    [body          (third ast)]
+                    [f             `(lambda ,(values binding-vars) ,body)])
+               ; Defer nesting env because binding-exprs is only available on fn* application.
+               (eval/p env f))]
 
-              [_
-                (match ast
-                  [`(lambda ,_ ,_)  (eval ast ns)]
-                  [_
-                    (let* ([nodes  (interpret env ast)]
-                           [proc   (car nodes)]
-                           [args   (cdr nodes)])
-                      (match proc
-                        [`(lambda ,binding-vars ,body)
-                          (eval/p (env-nest env binding-vars args) body)]
-                        [_  (apply proc args)]))])])]))
+            [_
+              (match ast
+                [`(lambda ,_ ,_)  (eval ast ns)]
+                [_
+                  (let* ([nodes  (interpret env ast)]
+                         [proc   (car nodes)]
+                         [args   (cdr nodes)])
+                    (match proc
+                      [`(lambda ,binding-vars ,body)
+                        (eval/p (env-nest env binding-vars args) body)]
+                      [_  (apply proc args)]))])])]))
 
+;; EVAL :: ast -> <unit or any>
 (define EVAL
   ((curry eval/p) repl-env))
 
@@ -116,14 +116,29 @@ unnamed
 
 (module+ main (repl-loop))
 
-(module+ test
+(module+ test (require rackunit)
 ;;   (define prog #<<unnamed
 ;; (load-file "./input.mal")
 ;; unnamed
 ;; )
-  (define prog #<<unnamed
-(not true)
-unnamed
-)
-  (rep prog))
-  ;; (displayln 12))
+;; ;; ;; ok:
+;; ;;   (define prog #<<unnamed
+;; ;; (not true)
+;; ;; unnamed
+;; ;; )
+;;   (rep prog)
+
+  (check-eq?
+    "do slurp terminates"
+    (eval/p repl-env '(load-file "./input.mal")))
+
+  (check-eq?
+    "do slurp terminates"
+    (eval/p repl-env '(do (slurp "input.mal") "do slurp terminates")))
+
+  (check-eq?
+    2
+    (eval/p repl-env '(+ 1 1)))
+
+  ;; (displayln 12)
+  )
